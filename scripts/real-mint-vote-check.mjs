@@ -1,0 +1,14 @@
+import nacl from 'tweetnacl';
+import * as bs58 from '../src/base58.js';
+import { buildMessage } from '../src/verify.js';
+const B='http://localhost:3001';
+const cfg = await (await fetch(B+'/api/config')).json();
+const rounds = await (await fetch(B+'/api/rounds')).json();
+const r = rounds.find(x=>x.round.kind==='location'); const cid = r.candidates[0].id;
+const kp = nacl.sign.keyPair(); const wallet = bs58.encode(kp.publicKey);
+const message = buildMessage({Action:'vote',Mint:cfg.tokenMint,Round:r.round.id,Candidate:cid,Wallet:wallet,Timestamp:new Date().toISOString()});
+const signature = Buffer.from(nacl.sign.detached(new TextEncoder().encode(message), kp.secretKey)).toString('base64');
+const res = await fetch(`${B}/api/rounds/${r.round.id}/vote`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({wallet,candidateId:cid,message,signature})});
+console.log('fresh wallet, valid signature, real mint ->', res.status, (await res.json()).error);
+const bad = await fetch(`${B}/api/rounds/${r.round.id}/vote`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({wallet:'6qirp44Q2T8B1CfbGmnqeXCLdQhFqmNCfAFfpKG4N156',candidateId:cid,message:message.replace(wallet,'6qirp44Q2T8B1CfbGmnqeXCLdQhFqmNCfAFfpKG4N156'),signature})});
+console.log('claiming a whale wallet with someone else\'s signature ->', bad.status, (await bad.json()).error);

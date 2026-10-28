@@ -1,0 +1,37 @@
+# Render Blueprint. In Render: New > Blueprint > connect this repo.
+# A persistent disk keeps the SQLite DB and uploaded designs across deploys (disks need a paid instance).
+services:
+  - type: web
+    name: billboard-fund
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/config
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "22.14.0"
+      - key: DEMO
+        value: "false"
+      - key: ADMIN_TOKEN
+        generateValue: true        # Render creates a random token; copy it from the Environment tab
+      - key: DB_PATH
+        value: /var/data/tracker.sqlite
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: RPC_URL
+        value: https://api.mainnet-beta.solana.com
+      - key: REVIEW_X_HANDLE
+        value: RiseofMemes
+      - key: PUBLIC_URL
+        sync: false                # set to your Render URL or custom domain
+      - key: TOKEN_MINT
+        sync: false                # leave empty until launch, or set it later in /#/admin
+      - key: REWARDS_WALLET
+        sync: false
